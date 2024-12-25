@@ -10,10 +10,12 @@ const { registerUser,
       getAllUser,
     getSingleUser,
     updateUserRole,
-    deleteUser, } = require("../controllers/userController");
+    deleteUser,
+    verify, } = require("../controllers/userController");
 const{isAuthenticateUser,authorizeRoles}=require("../middleware/auth")
 const router =express.Router();
 router.route("/register").post(registerUser);
+router.route("/verify").post(isAuthenticateUser,verify);
 router.route("/login").post(loginUser);
 router.route("/password/forgot").post(forgotPassword);
 router.route("/password/reset").put(resetPassword);

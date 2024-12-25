@@ -5,12 +5,74 @@ const sendToken = require("../utils/sendToken");
 const sendEmail=require("../utils/sendEmail");
 //const crypto=require("crypto");
 
-//register user
-exports.registerUser=catchAsyncError(async(req,res,next)=>{
-    const {name,email,password,mobileNo}= req.body;
-    const user=await User.create({name,email,password,mobileNo});
-    sendToken(user,201,res)
-})
+
+// Register User
+exports.registerUser = catchAsyncError(async (req, res, next) => {
+    const { name, email, password, mobileNo } = req.body;
+    const otp = String(Math.floor(Math.random() * 1000000)).padStart(6, '0');
+    const user = await User.create({
+        name,
+        email,
+        password,
+        mobileNo,
+        otp,
+        otp_expiry: new Date(Date.now() + process.env.OTP_EXPIRE * 60 * 1000),
+    });
+
+    try {
+        await sendEmail({
+            email: email,
+            subject: `EventWires Email Validation`,
+            message: `Your OTP is ${otp}. Use it to verify your email.`
+        });
+
+
+    } catch (error) {
+        user.otp = undefined;
+        user.otp_expiry = undefined;
+        await user.save({ validateBeforeSave: false });
+        return next(new ErrorHandler(error.message, 500));
+    }
+    const token=user.getJWTToken1();
+    //option for cookie
+    const options={
+        expires:new Date(
+          Date.now() + 5 * 60 * 1000),
+            httpOnly:true
+        
+    };
+    res.status(200).cookie("token",token,options).json({
+        success:true,
+        user,
+        token
+    });
+});
+
+// Verify OTP
+exports.verify = catchAsyncError(async (req, res, next) => {
+    try {
+        const otp = Number(req.body.otp);
+        const user = await User.findById(req.user._id);
+
+        if (user.otp !== otp || user.otp_expiry < Date.now()) {
+            return res.status(400).json({ success: false, message: "Invalid OTP or expired" });
+        }
+
+        user.verified = true;
+        user.otp = null;
+        user.otp_expiry = null;
+        await user.save();
+
+        sendToken(
+          user,
+          201,
+          res
+        );
+
+    } catch (error) {
+        return next(new ErrorHandler(error.message, 500));
+    }
+});
 // Import the User model and other necessary dependencies
 
 // loginUser route handler

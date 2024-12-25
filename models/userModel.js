@@ -35,11 +35,18 @@ const userSchema= new mongoose.Schema(
         type:String,
         default:"user"
     },
-    /*resetPasswordToken:String,
-    resetPasswordExpiry:Date,*/
     
   resetPasswordOtp: Number,
   resetPasswordOtpExpiry: Date,
+
+  verified: {
+    type: Boolean,
+    default: false,
+  },
+
+  otp: Number,
+  otp_expiry: Date,
+  
 
 
 });
@@ -50,6 +57,11 @@ userSchema.pre("save", async function (next) {
   
     this.password = await bcrypt.hash(this.password, 10);
   });
+
+  //register token
+  userSchema.methods.getJWTToken1=function(){
+    return jwt.sign({id:this._id},process.env.JWT_SECRET,{expiresIn:'5m',})
+}
 
 //jwt 
 userSchema.methods.getJWTToken=function(){
@@ -69,5 +81,7 @@ userSchema.methods.getResetPasswordToken=function(){
     this.resetPasswordExpiry=Date.now()+15*60*1000;
     return resetToken;
 }
+
+userSchema.index({ otp_expiry: 1 }, { expireAfterSeconds: 0 });
 
 module.exports=mongoose.model("User",userSchema)
