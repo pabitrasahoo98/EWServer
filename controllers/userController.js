@@ -172,9 +172,10 @@ exports.resetPassword = catchAsyncError(async (req, res, next) => {
       .createHash("sha256")
       .update(req.params.token)
       .digest("hex");*/
-      const { otp, newPassword } = req.body;
+      const {email, otp, newPassword } = req.body;
 
       const user = await User.findOne({
+        email:email,
         resetPasswordOtp: otp,
         resetPasswordOtpExpiry: { $gt: Date.now() },
       })
