@@ -108,15 +108,20 @@ exports.loginUser = catchAsyncError(async (req, res, next) => {
   }
 });
 //logout user
-exports.logout=catchAsyncError(async(req,res,next)=>{
-    res.cookie("token",null,{expires:new Date(Date.now())});
-    res.status(200).json({
-        sucess:true,
-        message:"logged out"
-    });
-    
+exports.logout = catchAsyncError(async (req, res, next) => {
+  // Clear the 'token' cookie by setting it to null and making its expiration date in the past
+  res.cookie("token", null, {
+    expires: new Date(Date.now()),  // Sets the cookie's expiration date to now (thus removing it)
+    httpOnly: true,                 // Prevents client-side JavaScript from accessing the cookie
+  });
 
+  // Respond with a success message indicating the user has logged out
+  res.status(200).json({
+    success: true,
+    message: "logged out"
+  });
 });
+
 //forgot password
 exports.forgotPassword=catchAsyncError(async(req,res,next)=>{
   const lowercaseEmail = req.body.email.toLowerCase();
